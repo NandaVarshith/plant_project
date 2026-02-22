@@ -50,3 +50,16 @@ dataset/
 
 # Logs
 *.log
+
+# Local training/evaluation data
+train_images/
+test_images/
+train_labels.csv
+test_labels.csv
+
+# Common ML run artifacts
+checkpoints/
+runs/
+outputs/
+logs/
+wandb/
