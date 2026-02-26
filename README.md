@@ -1,30 +1,44 @@
-# Plant Leaf Species Classifier
+# Plant Multi-Organ Classifier (TensorFlow)
 
-This project trains and serves a leaf-species image classifier using TensorFlow and Streamlit.
+This project trains an image classifier using TensorFlow/Keras and an EfficientNetB3 backbone in 3 stages:
 
-## What Is In Git vs Not In Git
+1. Initial frozen-backbone training
+2. Continue frozen training to 12 total epochs
+3. Partial unfreezing fine-tuning
 
-Tracked in git:
-- Source code (`app.py`, `train.py`, `evaluate.py`, `split_dataset.py`)
-- Project config files (`.gitignore`, `requirements.txt`, `README.md`)
+## Current Project Files
 
-Ignored by `.gitignore` (not pushed):
+Tracked training scripts:
+- `train_multiorgan.py`
+- `train_continue_12epoches.py`
+- `fine_tune_unfrozen.py`
+
+Config/docs:
+- `.gitignore`
+- `requirements.txt`
+- `README.md`
+
+## What Is Ignored by Git
+
+From `.gitignore`, local-only artifacts include:
 - `venv/`
-- `dataset/`
-- Model artifacts like `*.keras`, `*.h5`
+- `train_images/`
+- `test_images/`
+- `train_labels.csv`
+- `test_labels.csv`
+- model files like `*.keras`, `*.h5`
 
-Important: If `dataset/` or `venv/` were committed before `.gitignore`, remove them from tracking once:
+If these were tracked earlier, untrack once:
 
 ```powershell
-git rm -r --cached dataset venv
-git commit -m "Stop tracking local dataset and virtual environment"
+git rm -r --cached train_images test_images venv
+git rm --cached train_labels.csv test_labels.csv
+git commit -m "Stop tracking local data and environment files"
 ```
 
-## Python Version
+## Python and Setup
 
-Recommended: Python `3.10.x` (this project was built on `3.10.11`).
-
-## Setup (Reproducible Environment)
+Recommended Python: `3.10.x`
 
 ```powershell
 python -m venv venv
@@ -33,55 +47,54 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## Expected Dataset Layout
-
-`dataset/` should look like this:
+## Expected Local Data Layout
 
 ```text
-dataset/
-  images/
-    field/
-      <species_name>/
-    lab/
-      <species_name>/
-  train/
-    <species_name>/
-  test/
-    <species_name>/
+train_labels.csv
+test_labels.csv
+train_images/
+  train_images/
+    <image files referenced in train_labels.csv>
+test_images/
+  test_images/
+    <image files referenced in test_labels.csv>
 ```
 
-If you only have `dataset/images/field` and `dataset/images/lab`, generate train/test split:
+The CSV files are expected to have at least:
+- `filename`
+- `label`
+
+## Training Pipeline
+
+1) Initial training (frozen EfficientNetB3 backbone, 8 epochs):
 
 ```powershell
-python split_dataset.py
+python train_multiorgan.py
 ```
 
-## Train
+Output:
+- `multiorgan_model.keras`
+
+2) Continue frozen training (adds 4 epochs, 12 total):
 
 ```powershell
-python train.py
+python train_continue_12epoches.py
 ```
 
-This saves: `leaf_species_model_finetuned.keras`
+Output:
+- `multiorgan_model_12epochs.keras`
 
-## Evaluate
+3) Fine-tune (unfreeze top ~30% layers, 5 epochs, lower LR):
 
 ```powershell
-python evaluate.py
+python fine_tune_unfrozen.py
 ```
 
-## Run Streamlit App
+Output:
+- `multiorgan_final_finetuned.keras`
 
-`app.py` currently loads `leaf_species_model.keras`. Ensure that file exists, or update `app.py` to load your desired model file.
+## Notes
 
-```powershell
-streamlit run app.py
-```
-
-## Reproducing Your Version on Another Machine
-
-1. Clone the repo.
-2. Create and activate a new virtual environment.
-3. Install `requirements.txt`.
-4. Place dataset and model files in the expected local paths.
-5. Run training/evaluation/app commands above.
+- Input image size is `300x300`.
+- Preprocessing uses `tf.keras.applications.efficientnet.preprocess_input`.
+- Current scripts use `test_labels.csv` + `test_images/` as validation data during training.
